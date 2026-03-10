@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arian's ARCADE</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:           #0c0c0e;
+    --surface:      #111115;
+    --surface2:     #18181f;
+    --border:       #252530;
+    --border-hover: #3a3a50;
+    --accent:       #e8c84a;
+    --accent-dim:   rgba(232,200,74,0.12);
+    --text-primary: #f0f0f5;
+    --text-secondary:#7a7a90;
+    --text-muted:   #40404e;
+    --radius:       8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 128px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .layout {
+    position: relative;
+    z-index: 1;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 32px 80px;
+  }
+  header {
+    padding: 52px 0 36px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .header-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .header-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 8vw, 96px);
+    letter-spacing: 3px;
+    line-height: 0.92;
+    color: var(--text-primary);
+  }
+  .header-title span { color: var(--accent); }
+  .header-meta {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .meta-pill {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: var(--text-secondary);
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+  }
+  .meta-pill.live::before { content: '● '; color: #5cef7c; }
+  .meta-pill a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .meta-pill a:hover { color: var(--accent); }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 10px 18px 12px;
+    cursor: pointer;
+    margin-bottom: -1px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .tab-btn:hover { color: var(--text-primary); }
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── LIBRARY TAB ── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .search-wrap {
+    flex: 1;
+    min-width: 220px;
+    position: relative;
+  }
+  .search-wrap svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+  .search-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 11px 14px 11px 42px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-input::placeholder { color: var(--text-muted); }
+  .search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+  }
+  .result-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+  }
+  .result-count strong { color: var(--accent); }
+  .game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 14px;
+  }
+  .game-card {
+    display: block;
+    text-decoration: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    animation: fadeUp 0.35s ease both;
+    position: relative;
+  }
+  .game-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px var(--accent);
+  }
+  .game-card:hover .card-overlay { opacity: 1; }
+  .game-card:hover .card-img { transform: scale(1.04); }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card-thumb {
+    width: 100%;
+    aspect-ratio: 16/10;
+    overflow: hidden;
+    background: var(--surface2);
+    position: relative;
+  }
+  .card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.35s ease;
+  }
+  .card-img-fallback {
+    width: 100%;
+    height: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    background: var(--surface2);
+    text-align: center;
+    padding: 10px;
+  }
+  .card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(12,12,14,0.85) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.25s;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 10px;
+  }
+  .play-badge {
+    background: var(--accent);
+    color: #0c0c0e;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    padding: 5px 10px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .card-body {
+    padding: 12px 14px 14px;
+    border-top: 1px solid var(--border);
+  }
+  .card-name {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.35;
+    margin-bottom: 4px;
+    word-break: break-word;
+  }
+  .card-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+  .no-results {
+    grid-column: 1 / -1;
+    padding: 80px 20px;
+    text-align: center;
+  }
+  .no-results-code {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 72px;
+    color: var(--border);
+    letter-spacing: 4px;
+    display: block;
+    margin-bottom: 12px;
+  }
+  .no-results-msg {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  /* ── EMPFEHLUNGEN TAB ── */
+  .rec-wrap { max-width: 600px; }
+  .rec-intro {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin-bottom: 28px;
+  }
+  .rec-intro strong { color: var(--text-primary); }
+  .form-group { margin-bottom: 18px; }
+  .form-label {
+    display: block;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+  .form-label span { color: var(--accent); margin-left: 2px; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 11px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .form-input::placeholder, .form-textarea::placeholder { color: var(--text-muted); }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+  }
+  .form-textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+  .form-select-wrap { position: relative; }
+  .form-select-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+    font-size: 12px;
+  }
+  .form-select option { background: var(--surface2); color: var(--text-primary); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .submit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent);
+    color: #0c0c0e;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: none;
+    border-radius: var(--radius);
+    padding: 13px 24px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    margin-top: 8px;
+  }
+  .submit-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .submit-btn:active { transform: translateY(0); }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    z-index: 999;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--text-primary);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    transform: translateY(20px);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    pointer-events: none;
+    max-width: 320px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .toast.success .toast-dot { background: #5cef7c; }
+  .toast.error   .toast-dot { background: #ef5c5c; }
+
+  /* ── FOOTER ── */
+  footer {
+    margin-top: 60px;
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .footer-brand { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; color: var(--text-muted); }
+  .footer-brand span { color: var(--accent); }
+  .footer-copy { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; color: var(--text-muted); }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  /* ── NEWS OVERLAY ── */
+  .news-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+  .news-backdrop.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .news-modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 520px;
+    max-height: min(600px, 90vh);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(232,200,74,0.08), 0 32px 80px rgba(0,0,0,0.7), 0 0 60px rgba(232,200,74,0.04);
+    transform: translateY(28px) scale(0.97);
+    transition: transform 0.4s cubic-bezier(0.22,1,0.36,1);
+  }
+  .news-backdrop.visible .news-modal {
+    transform: translateY(0) scale(1);
+  }
+  .news-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 24px 24px 20px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, var(--surface2) 0%, var(--surface) 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .news-header::before {
+    content: 'NEWS';
+    position: absolute;
+    right: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 96px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    opacity: 0.04;
+    pointer-events: none;
+    line-height: 1;
+  }
+  .news-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    color: var(--accent);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .news-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 2px;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+  .news-close {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    margin-top: 2px;
+  }
+  .news-close:hover {
+    background: rgba(232,200,74,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .news-feed {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-hover) transparent;
+  }
+  .news-feed::-webkit-scrollbar { width: 4px; }
+  .news-feed::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 2px; }
+  .news-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 48px 0;
+  }
+  .news-loading-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: newsDotPulse 1.4s ease-in-out infinite;
+  }
+  .news-loading-dot:nth-child(2) { animation-delay: 0.2s; }
+  .news-loading-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes newsDotPulse {
+    0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+    40%           { opacity: 1;   transform: scale(1); }
+  }
+  .news-item {
+    display: flex;
+    gap: 14px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    animation: newsItemIn 0.3s ease both;
+    transition: background 0.2s;
+  }
+  .news-item:last-child { border-bottom: none; }
+  .news-item:hover { background: var(--surface2); }
+  @keyframes newsItemIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .news-item-bar {
+    width: 2px;
+    border-radius: 2px;
+    background: var(--accent);
+    flex-shrink: 0;
+    opacity: 0.6;
+    align-self: stretch;
+    min-height: 38px;
+  }
+  .news-item-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .news-item-text {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+  }
+  .news-link {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: opacity 0.2s;
+  }
+  .news-link:hover { opacity: 0.75; }
+  .news-error {
+    padding: 40px 24px;
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+  .news-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+    flex-wrap: wrap;
+  }
+  .news-suppress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .news-suppress input[type="checkbox"] { display: none; }
+  .news-suppress-box {
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--border-hover);
+    border-radius: 3px;
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .news-suppress input:checked + .news-suppress-box {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .news-suppress input:checked + .news-suppress-box::after {
+    content: '';
+    display: block;
+    width: 9px;
+    height: 6px;
+    border-left: 2px solid #0c0c0e;
+    border-bottom: 2px solid #0c0c0e;
+    transform: rotate(-45deg) translate(1px, -1px);
+  }
+  .news-suppress-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+  .news-dismiss-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent);
+    color: #0c0c0e;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 5px;
+    padding: 9px 16px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    white-space: nowrap;
+  }
+  .news-dismiss-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+  .news-dismiss-btn:active { transform: translateY(0); }
+
+  @media (max-width: 600px) {
+    .layout { padding: 0 16px 60px; }
+    .game-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+    .form-row { grid-template-columns: 1fr; }
+    .toast { bottom: 16px; right: 16px; left: 16px; }
+    .news-modal { border-radius: 10px; }
+    .news-header { padding: 18px 18px 16px; }
+    .news-item { padding: 14px 18px; }
+    .news-footer { padding: 14px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NEWS POPUP -->
+<div class="news-backdrop" id="newsBackdrop">
+  <div class="news-modal" id="newsModal" role="dialog" aria-modal="true" aria-label="Arcade News">
+    <div class="news-header">
+      <div class="news-header-left">
+        <span class="news-eyebrow">// ARCADE_NEWS</span>
+        <h2 class="news-title">Was gibt's Neues?</h2>
+      </div>
+      <button class="news-close" id="newsClose" aria-label="Schließen">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="news-feed" id="newsFeed">
+      <div class="news-loading">
+        <span class="news-loading-dot"></span>
+        <span class="news-loading-dot"></span>
+        <span class="news-loading-dot"></span>
+      </div>
+    </div>
+    <div class="news-footer">
+      <label class="news-suppress">
+        <input type="checkbox" id="newsSuppress">
+        <span class="news-suppress-box"></span>
+        <span class="news-suppress-label">Heute nicht mehr anzeigen</span>
+      </label>
+      <button class="news-dismiss-btn" id="newsDismiss">
+        Verstanden
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+
+<script>
+const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1480716364053348543/2nOEBM1i3pOuDQP45VeN7AZlKcOsoi4Tr5IsTVRnltDY-QiomlN3wEozEuYa50GiD3Db";
+
+const GAMES = [
+  { name: "Antonblast", image: "https://internet-abc-de.netlify.app/assets/icons/AntonBlast.jpg", url: "games/Antonblast", genre: "Action" },
+  { name: "Bad Parenting 1", image: "https://internet-abc-de.netlify.app/assets/icons/BadParenting.jpg", url: "games/BadParenting-one", genre: "Indie" },
+  { name: "Baldi's Basics Plus", image: "https://internet-abc-de.netlify.app/assets/icons/BaldisBasicsPlus.webp", url: "games/BaldisBasicsPlus", genre: "Horror" },
+  { name: "Buckshot Roulette", image: "https://internet-abc-de.netlify.app/assets/icons/buckshotroulette.jpg", url: "games/BuckshotRoulette", genre: "Horror" },
+  { name: "Celeste", image: "https://internet-abc-de.netlify.app/assets/icons/Celeste.jpg", url: "games/Celeste", genre: "Platformer" },
+  { name: "ChatGPT", image: "https://internet-abc-de.netlify.app/assets/icons/KI.png", url: "games/KI", genre: "KI-Tool" },
+  { name: "Clover Pit", image: "https://internet-abc-de.netlify.app/assets/icons/CloverPit.jpg", url: "games/CloverPit", genre: "Indie" },
+  { name: "Cuphead", image: "https://internet-abc-de.netlify.app/assets/icons/Cuphead.png", url: "games/Cuphead", genre: "Action" },
+  { name: "Five Nights at Epstein's", image: "https://internet-abc-de.netlify.app/assets/icons/FNAE.webp", url: "games/FNAE", genre: "Horror" },
+  { name: "FNaF: Pizza Simulator", image: "https://internet-abc-de.netlify.app/assets/icons/FnafPizza.webp", url: "games/FnafPizza", genre: "Horror" },
+  { name: "FNaF: Sister Location", image: "https://internet-abc-de.netlify.app/assets/icons/FnaeSister.avif", url: "games/FnafSister", genre: "Horror" },
+  { name: "Half-Life", image: "https://internet-abc-de.netlify.app/assets/icons/HalfLife.jpg", url: "games/HalfLife", genre: "FPS" },
+  { name: "Hollow Knight", image: "https://internet-abc-de.netlify.app/assets/icons/HollowKnight.jpg", url: "games/HollowKnight", genre: "Metroidvania" },
+  { name: "Iron Lung", image: "https://internet-abc-de.netlify.app/assets/icons/IronLung.jpg", url: "games/IronLung", genre: "Horror" },
+  { name: "Karlson", image: "https://internet-abc-de.netlify.app/assets/icons/Karlson.png", url: "games/Karlson", genre: "FPS" },
+  { name: "Kindergarten", image: "https://internet-abc-de.netlify.app/assets/icons/Kindergarten.png", url: "games/Kindegarten", genre: "RPG" },
+  { name: "Minecraft", image: "https://internet-abc-de.netlify.app/assets/icons/minecraft.png", url: "games/MC", genre: "Sandbox" },
+  { name: "OMORI", image: "https://internet-abc-de.netlify.app/assets/icons/OMORI.png", url: "games/OMORI", genre: "RPG" },
+  { name: "Oneshot (LEGACY)", image: "https://internet-abc-de.netlify.app/assets/icons/Oneshot.png", url: "games/Oneshot", genre: "Puzzle" },
+  { name: "People Playground", image: "https://internet-abc-de.netlify.app/assets/icons/PeoplePlayground.png", url: "games/PeoplePlayground", genre: "Sandbox" },
+  { name: "Pizza Tower", image: "https://internet-abc-de.netlify.app/assets/icons/PizzaTower.png", url: "games/PizzaTower", genre: "Platformer" },
+  { name: "R.E.P.O", image: "https://internet-abc-de.netlify.app/assets/icons/REPO.webp", url: "games/REPO", genre: "Co-op" },
+  { name: "Schoolboy Runaway", image: "https://internet-abc-de.netlify.app/assets/icons/SchoolBoyRunaway.webp", url: "games/SB-Runaway", genre: "Action" },
+  { name: "Slime Rancher", image: "https://internet-abc-de.netlify.app/assets/icons/SlimeRancher.webp", url: "games/SlimeRancher", genre: "Sandbox" },
+  { name: "Soundboard", image: "https://internet-abc-de.netlify.app/assets/icons/Soundboard.png", url: "games/Soundboard", genre: "Tool" },
+  { name: "Stick War: Legacy", image: "https://internet-abc-de.netlify.app/assets/icons/StickWarLegacy.jpg", url: "games/StickWarLegacy", genre: "Strategie" },
+  { name: "Tattletail", image: "https://internet-abc-de.netlify.app/assets/icons/Tattletail.jpg", url: "games/Tattletail", genre: "Horror" },
+  { name: "Terraria", image: "https://internet-abc-de.netlify.app/assets/icons/Terraria.jpg", url: "games/Terraria", genre: "Sandbox" },
+  { name: "That's Not My Neighbor", image: "https://internet-abc-de.netlify.app/assets/icons/TNMN.png", url: "games/ThatsNotMyNeighbor", genre: "Horror" },
+  { name: "ULTRAKILL", image: "https://internet-abc-de.netlify.app/assets/icons/ultrakill.jpg", url: "games/ULTRAKILL", genre: "FPS" },
+  { name: "Untitled Goose Game", image: "https://internet-abc-de.netlify.app/assets/icons/UGG.jpg", url: "games/UntitledGooseGame", genre: "Puzzle" },
+  { name: "WebFishing", image: "https://internet-abc-de.netlify.app/assets/icons/webfishing.png", url: "games/WebFishing", genre: "Chill" },
+  { name: "Yume Nikki", image: "https://internet-abc-de.netlify.app/assets/icons/yumenikki.jpg", url: "games/YumeNikki", genre: "RPG" },
+  { name: "Elastic Man", image: "https://internet-abc-de.netlify.app/assets/icons/elasticman.png", url: "games/ElasticMan", genre: "Web" },
+  { name: "Escape Road City 2", image: "https://internet-abc-de.netlify.app/assets/icons/ERC2.png", url: "games/EscapeRoadCity", genre: "Racing" },
+  { name: "Flappy Bird", image: "https://internet-abc-de.netlify.app/assets/icons/FlappyBird.png", url: "games/FlappyBird", genre: "Web" },
+  { name: "Granny", image: "https://internet-abc-de.netlify.app/assets/icons/granny.png", url: "games/Granny", genre: "Horror" },
+  { name: "Sandtris", image: "https://internet-abc-de.netlify.app/assets/icons/SandTris.jpg", url: "games/Sandtris", genre: "Puzzle" },
+];
+</script>
+
+<header>
+  <div class="header-eyebrow">Spieleauswahl — Bibliothek</div>
+  <h1 class="header-title">Arian's <span>ARCADE</span></h1>
+  <div class="header-meta">
+    <span class="meta-pill live">Online</span>
+    <span class="meta-pill" id="totalPill">— Spiele</span>
+    <span class="meta-pill">v1.0</span>
+    <span class="meta-pill"><a href="index.html">🌐 Sprache wechseln</a></span>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="library">🎮 Bibliothek</button>
+  <button class="tab-btn" data-tab="empfehlungen">✉️ Game Empfehlungen</button>
+</div>
+
+<div class="tab-panel active" id="tab-library">
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input class="search-input" id="searchInput" type="text" placeholder="Spiel suchen …" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="result-count" id="resultCount"></div>
+  </div>
+  <div class="game-grid" id="gameGrid"></div>
+</div>
+
+<div class="tab-panel" id="tab-empfehlungen">
+  <div class="rec-wrap">
+    <p class="rec-intro">
+      Kennst du ein Spiel, das hier fehlt? Schick eine <strong>Empfehlung</strong> direkt an Arian –
+      sie landet automatisch im Discord.
+    </p>
+    <div class="form-group">
+      <label class="form-label" for="rec-name">Spielname <span>*</span></label>
+      <input class="form-input" id="rec-name" type="text" placeholder="z.B. Hades II" maxlength="100">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="rec-genre">Genre <span>*</span></label>
+        <div class="form-select-wrap">
+          <select class="form-select" id="rec-genre">
+            <option value="" disabled selected>Wählen …</option>
+            <option>Action</option><option>Adventure</option><option>Chill</option>
+            <option>Co-op</option><option>FPS</option><option>Horror</option>
+            <option>Indie</option><option>KI-Tool</option><option>Metroidvania</option>
+            <option>Platformer</option><option>Puzzle</option><option>Racing</option>
+            <option>RPG</option><option>Sandbox</option><option>Strategie</option>
+            <option>Tool</option><option>Web</option><option>Sonstiges</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="rec-platform">Plattform</label>
+        <div class="form-select-wrap">
+          <select class="form-select" id="rec-platform">
+            <option value="" selected>Keine Angabe</option>
+            <option>Steam</option><option>itch.io</option><option>Browser / Web</option>
+            <option>Mobile (Android)</option><option>Mobile (iOS)</option>
+            <option>Nintendo Switch</option><option>PlayStation</option>
+            <option>Xbox</option><option>Sonstiges</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="rec-link">Link zum Spiel</label>
+      <input class="form-input" id="rec-link" type="url" placeholder="https://…" maxlength="300">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="rec-reason">Warum empfiehlst du es?</label>
+      <textarea class="form-textarea" id="rec-reason" placeholder="Kurze Beschreibung, was das Spiel besonders macht …" maxlength="500"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="rec-sender">Dein Name / Spitzname</label>
+      <input class="form-input" id="rec-sender" type="text" placeholder="Anonym" maxlength="60">
+    </div>
+    <button class="submit-btn" id="submitBtn" onclick="sendRecommendation()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+      Empfehlung senden
+    </button>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-brand">Arian's <span>ARCADE</span></div>
+  <div class="footer-copy">© 2025 — <a href="tos.html" style="color:var(--accent);text-decoration:none;letter-spacing:1px;" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">Nutzungsbedingungen</a> — Made by Arian — Alle Rechte vorbehalten</div>
+</footer>
+
+</div>
+
+<div class="toast" id="toast">
+  <div class="toast-dot"></div>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+  const grid        = document.getElementById('gameGrid');
+  const searchInput = document.getElementById('searchInput');
+  const resultCount = document.getElementById('resultCount');
+  const totalPill   = document.getElementById('totalPill');
+  totalPill.textContent = `${GAMES.length} Spiele`;
+
+  function render(q = '') {
+    grid.innerHTML = '';
+    const query    = q.toLowerCase().trim();
+    const filtered = query
+      ? GAMES.filter(g => g.name.toLowerCase().includes(query) || g.genre.toLowerCase().includes(query))
+      : GAMES;
+    resultCount.innerHTML = query
+      ? `<strong>${filtered.length}</strong> Ergebnis${filtered.length !== 1 ? 'se' : ''} für „${q}"`
+      : `<strong>${filtered.length}</strong> Spiele`;
+    if (!filtered.length) {
+      grid.innerHTML = `<div class="no-results"><span class="no-results-code">404</span><span class="no-results-msg">Kein Spiel gefunden für „${q}"</span></div>`;
+      return;
+    }
+    filtered.forEach((game, i) => {
+      const card = document.createElement('a');
+      card.className = 'game-card';
+      card.href      = game.url;
+      card.target    = '_blank';
+      card.rel       = 'noopener noreferrer';
+      card.style.animationDelay = `${i * 0.03}s`;
+      card.innerHTML = `
+        <div class="card-thumb">
+          <img class="card-img" src="${game.image}" alt="${game.name}" loading="lazy"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="card-img-fallback">${game.name}</div>
+          <div class="card-overlay"><span class="play-badge">Spielen</span></div>
+        </div>
+        <div class="card-body">
+          <div class="card-name">${game.name}</div>
+          <div class="card-tag">${game.genre}</div>
+        </div>`;
+      grid.appendChild(card);
+    });
+  }
+  searchInput.addEventListener('input', e => render(e.target.value));
+  render();
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  let toastTimer;
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast');
+    const msgEl = document.getElementById('toastMsg');
+    toast.className = `toast ${type}`;
+    msgEl.textContent = msg;
+    clearTimeout(toastTimer);
+    requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 4000);
+  }
+
+  async function sendRecommendation() {
+    const name     = document.getElementById('rec-name').value.trim();
+    const genre    = document.getElementById('rec-genre').value;
+    const platform = document.getElementById('rec-platform').value;
+    const link     = document.getElementById('rec-link').value.trim();
+    const reason   = document.getElementById('rec-reason').value.trim();
+    const sender   = document.getElementById('rec-sender').value.trim() || 'Anonym';
+    if (!name)  { showToast('Spielname fehlt.', 'error');  return; }
+    if (!genre) { showToast('Genre fehlt.',     'error');  return; }
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Wird gesendet …';
+    const fields = [
+      { name: '🎮 Spiel',     value: name,               inline: true  },
+      { name: '🏷️ Genre',    value: genre,              inline: true  },
+      { name: '💻 Plattform', value: platform || 'k.A.', inline: true  },
+    ];
+    if (link)   fields.push({ name: '🔗 Link',       value: link,   inline: false });
+    if (reason) fields.push({ name: '💬 Begründung', value: reason, inline: false });
+    const payload = {
+      embeds: [{
+        title: '🕹️ Neue Spielempfehlung',
+        color: 0xe8c84a,
+        fields,
+        footer: { text: `Empfohlen von: ${sender} • Arian's ARCADE` },
+        timestamp: new Date().toISOString(),
+      }]
+    };
+    try {
+      const res = await fetch(DISCORD_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        showToast('Empfehlung gesendet! ✓', 'success');
+        ['rec-name','rec-link','rec-reason','rec-sender'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('rec-genre').selectedIndex = 0;
+        document.getElementById('rec-platform').selectedIndex = 0;
+      } else {
+        showToast('Fehler beim Senden. Webhook prüfen.', 'error');
+      }
+    } catch {
+      showToast('Netzwerkfehler. Bitte erneut versuchen.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Empfehlung senden`;
+    }
+  }
+
+  (function () {
+    const SUPPRESS_KEY = 'arcade_news_suppress_date';
+    const today = new Date().toDateString();
+    if (localStorage.getItem(SUPPRESS_KEY) === today) return;
+    const backdrop = document.getElementById('newsBackdrop');
+    const feed     = document.getElementById('newsFeed');
+    function hideModal() {
+      backdrop.classList.remove('visible');
+      document.body.style.overflow = '';
+      if (document.getElementById('newsSuppress').checked) {
+        localStorage.setItem(SUPPRESS_KEY, today);
+      }
+    }
+    document.getElementById('newsClose').addEventListener('click', hideModal);
+    document.getElementById('newsDismiss').addEventListener('click', hideModal);
+    backdrop.addEventListener('click', e => { if (e.target === backdrop) hideModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') hideModal(); });
+    const NEWS_URL = 'https://gist.githubusercontent.com/ShatteredHorizon/84e1e038fe67df1dc60f0d6d4b888774/raw/gistfile1.txt';
+    function linkify(text) {
+      return text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="news-link">$1</a>');
+    }
+    function renderNews(lines) {
+      if (!lines.length) { feed.innerHTML = '<div class="news-error">Keine News vorhanden.</div>'; return; }
+      feed.innerHTML = '';
+      lines.forEach((text, i) => {
+        const el = document.createElement('div');
+        el.className = 'news-item';
+        el.style.animationDelay = `${i * 0.07}s`;
+        el.innerHTML = `<div class="news-item-bar"></div><div class="news-item-content"><div class="news-item-text">${linkify(text)}</div></div>`;
+        feed.appendChild(el);
+      });
+    }
+    async function polishLines(lines) {
+      try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1000,
+            messages: [{ role: 'user', content: `Du bist ein Redakteur für eine deutschsprachige Gaming-Arcade-Seite namens "Arian's ARCADE". Dir werden rohe News-Zeilen gegeben – auf Englisch oder gebrochenem Deutsch. Gib sie als sauberes, natürliches Deutsch zurück. Kurz, prägnant, arcade-typisch. Gib NUR die fertig übersetzten Zeilen zurück, eine pro Zeile, KEINE Nummerierung, KEINE Erklärungen, KEINE Anführungszeichen.\n\nZeilen:\n${lines.join('\n')}` }]
+          })
+        });
+        const data = await response.json();
+        const result = data.content?.[0]?.text?.trim() || '';
+        const polished = result.split('\n').map(l => l.trim()).filter(Boolean);
+        return polished.length === lines.length ? polished : lines;
+      } catch { return lines; }
+    }
+    fetch(NEWS_URL + '?_=' + Date.now())
+      .then(r => { if (!r.ok) throw new Error(); return r.text(); })
+      .then(async text => {
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+        const polished = await polishLines(lines);
+        renderNews(polished);
+      })
+      .catch(() => { feed.innerHTML = '<div class="news-error">News konnten nicht geladen werden.</div>'; });
+    setTimeout(() => { backdrop.classList.add('visible'); document.body.style.overflow = 'hidden'; }, 400);
+  })();
+</script>
+
+<!-- TOS GATE -->
+<div class="tos-backdrop" id="tosBackdrop">
+  <div class="tos-modal" id="tosModal" role="dialog" aria-modal="true">
+    <div class="tos-header">
+      <span class="tos-eyebrow">// NUTZUNGSBEDINGUNGEN</span>
+      <h2 class="tos-title">Bevor du weitermachst</h2>
+    </div>
+    <div class="tos-body">
+      <p>Um Arian's ARCADE zu nutzen, musst du den <a href="tos.html" target="_blank" class="tos-link">Nutzungsbedingungen</a> zustimmen.</p>
+      <ul>
+        <li>Alle Inhalte sind nur für den persönlichen Gebrauch.</li>
+        <li>Du bist für deine Aktivitäten auf dieser Seite verantwortlich.</li>
+        <li>Missbrauch kann zum Ausschluss führen.</li>
+        <li>Die vollständigen Bedingungen findest du unter <a href="tos.html" target="_blank" class="tos-link">tos.html</a>.</li>
+      </ul>
+    </div>
+    <div class="tos-footer">
+      <label class="tos-check">
+        <input type="checkbox" id="tosCheckbox">
+        <span class="tos-check-box"></span>
+        <span class="tos-check-label">Ich habe die Nutzungsbedingungen gelesen und akzeptiere sie.</span>
+      </label>
+      <button class="tos-accept-btn" id="tosAcceptBtn" disabled onclick="acceptTos()">
+        Zustimmen &amp; Betreten
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .tos-backdrop {
+    position: fixed; inset: 0; z-index: 9999; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    opacity: 0; transition: opacity 0.4s ease;
+  }
+  .tos-backdrop.visible { opacity: 1; }
+  .tos-backdrop.hidden { opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+  .tos-modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    width: 100%; max-width: 500px; overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(232,200,74,0.1), 0 32px 80px rgba(0,0,0,0.8);
+    transform: translateY(20px); transition: transform 0.4s cubic-bezier(0.22,1,0.36,1);
+  }
+  .tos-backdrop.visible .tos-modal { transform: translateY(0); }
+  .tos-header {
+    padding: 24px 24px 20px; border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, var(--surface2), var(--surface));
+    position: relative; overflow: hidden;
+  }
+  .tos-header::before {
+    content: 'TOS'; position: absolute; right: -4px; top: 50%; transform: translateY(-50%);
+    font-family: 'Bebas Neue', sans-serif; font-size: 96px; color: var(--accent);
+    opacity: 0.04; pointer-events: none; line-height: 1; letter-spacing: 4px;
+  }
+  .tos-eyebrow { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 2.5px; color: var(--accent); text-transform: uppercase; display: block; margin-bottom: 6px; }
+  .tos-title { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 2px; color: var(--text-primary); line-height: 1; }
+  .tos-body { padding: 20px 24px; }
+  .tos-body p { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 14px; }
+  .tos-body ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .tos-body ul li { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.5px; color: var(--text-secondary); padding-left: 16px; position: relative; line-height: 1.5; }
+  .tos-body ul li::before { content: '—'; position: absolute; left: 0; color: var(--accent); opacity: 0.6; }
+  .tos-link { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  .tos-link:hover { opacity: 0.75; }
+  .tos-footer { display: flex; flex-direction: column; gap: 14px; padding: 16px 24px 20px; border-top: 1px solid var(--border); background: var(--surface2); }
+  .tos-check { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; user-select: none; }
+  .tos-check input { display: none; }
+  .tos-check-box { width: 18px; height: 18px; border: 1px solid var(--border-hover); border-radius: 3px; background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; transition: background 0.2s, border-color 0.2s; }
+  .tos-check input:checked + .tos-check-box { background: var(--accent); border-color: var(--accent); }
+  .tos-check input:checked + .tos-check-box::after { content: ''; display: block; width: 10px; height: 6px; border-left: 2px solid #0c0c0e; border-bottom: 2px solid #0c0c0e; transform: rotate(-45deg) translate(1px, -1px); }
+  .tos-check-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.8px; color: var(--text-secondary); line-height: 1.55; text-transform: uppercase; }
+  .tos-accept-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--accent); color: #0c0c0e; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; border: none; border-radius: 6px; padding: 12px 20px; cursor: pointer; transition: opacity 0.2s, transform 0.15s; width: 100%; }
+  .tos-accept-btn:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
+  .tos-accept-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+</style>
+
+<script>
+  (function() {
+    const TOS_KEY = 'arcade_tos_accepted';
+    const backdrop = document.getElementById('tosBackdrop');
+    if (localStorage.getItem(TOS_KEY) === 'yes') { backdrop.style.display = 'none'; return; }
+    requestAnimationFrame(() => requestAnimationFrame(() => backdrop.classList.add('visible')));
+    document.body.style.overflow = 'hidden';
+    document.getElementById('tosCheckbox').addEventListener('change', function() {
+      document.getElementById('tosAcceptBtn').disabled = !this.checked;
+    });
+  })();
+  function acceptTos() {
+    localStorage.setItem('arcade_tos_accepted', 'yes');
+    const backdrop = document.getElementById('tosBackdrop');
+    backdrop.classList.add('hidden');
+    document.body.style.overflow = '';
+    setTimeout(() => backdrop.style.display = 'none', 400);
+  }
+</script>
+
+</body>
+</html>
